@@ -1,3 +1,5 @@
+# **Hi, I'm janhan**
+<hr>
 <div align="center" style="max-width: 600px; margin: auto;">
   <!-- GitHub Readme Stats -->
   <p>
@@ -21,8 +23,10 @@
     <img src="https://img.shields.io/badge/Intel-Core_i7_13th-0071C5?style=for-the-badge&logo=intel&logoColor=white" />
     <br> <!-- 줄 나누기 -->
     <img src="https://img.shields.io/badge/NVIDIA-RTX4070TI-76B900?style=for-the-badge&logo=nvidia&logoColor=white" />
+    <!-- IDE -->
     <img src="https://img.shields.io/badge/Visual_Studio_Code-0078D4?style=for-the-badge&logo=visual%20studio%20code&logoColor=white" />
   </p>
+  <h2 align="left" >My Project</h2>
   <hr>
    <a href="https://github.com/janhan42/42Seoul-IRC">
     <img src="https://github-readme-stats.vercel.app/api/pin/?username=janhan42&repo=42Seoul-IRC&theme=dark" />
