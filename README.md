@@ -10,7 +10,6 @@
       <img height="195" src="https://github-readme-stats.vercel.app/api?username=OnePaperHoon&layout=compact&count_private=true&show_icons=true&theme=dark&hide_border=false&hide_rank=true" />
     </a>
   </p>
-  <a href="https://onepaperhoon.github.io/">IO</a>
   <!-- 구분선 -->
   <hr>
   <!-- 기술 스택 -->
