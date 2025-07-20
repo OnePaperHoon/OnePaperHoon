@@ -34,10 +34,7 @@
   <h2 align="left" >My Project</h2>
   
    <a href="https://github.com/OnePaperHoon/42Seoul-IRC">
-    <img src="https://github-readme-stats.vercel.app/api/pin/?username=OnePaperHoon&repo=42Seoul-IRC&theme=dark" />
-    </a>
-     <a href="https://github.com/OnePaperHoon/42Seoul-IRC">
-    <img src="https://github-readme-stats.vercel.app/api/pin/?username=OnePaperHoon&repo=42Seoul-Inception&theme=dark" />
+    <img src="https://github-readme-stats.vercel.app/api/pin/?username=OnePaperHoon&repo=42Seoul&theme=dark" />
     </a>
 </div>
 
