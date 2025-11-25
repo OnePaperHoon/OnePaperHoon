@@ -44,5 +44,5 @@
   <li>École 42 (42Seoul), Computer Science, Member<br>2025-03-05 ~  </li>
   <li>École 42 (42Seoul), Computer Science, Learner<br>2023.09.26 ~ 2025-03-05</li>
   </ul>
-</div> 
+</div>
   
