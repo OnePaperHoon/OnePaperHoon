@@ -1,5 +1,4 @@
 # **Hi, I'm OnePaperHoon**
-![OnePaperHoon GitHub stats](https://github-readme-stats.vercel.app/api?username=OnePaperHoon&show_icons=true&theme=highcontrast)
 <hr>
 <div align="left" style="max-width: 600px; margin: auto;">
   <!-- GitHub Readme Stats -->
