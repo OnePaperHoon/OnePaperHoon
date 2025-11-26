@@ -6,8 +6,8 @@
     <a href="https://github-readme-stats.vercel.app/api?username=OnePaperHoon">
       <img height="195" src="https://github-readme-stats.vercel.app/api/top-langs/?username=OnePaperHoon&layout=compact&count_private=true&show_icons=true&theme=dark&hide_border=false" />
     </a>
-    ![OnePaperHoon GitHub stats](https://github-readme-stats.vercel.app/api?username=OnePaperHoon&show_icons=true&theme=highcontrast)  
   </p>
+  ![OnePaperHoon GitHub stats](https://github-readme-stats.vercel.app/api?username=OnePaperHoon&show_icons=true&theme=highcontrast)  
   <!-- 구분선 -->
   <hr>
   <!-- 기술 스택 -->
