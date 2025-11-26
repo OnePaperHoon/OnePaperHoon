@@ -1,4 +1,5 @@
 # **Hi, I'm OnePaperHoon**
+![K-Junyyy's GitHub stats](https://github-readme-stats.vercel.app/api?username=OnePaperHoon&show_icons=true&theme=highcontrast)
 <hr>
 <div align="left" style="max-width: 600px; margin: auto;">
   <!-- GitHub Readme Stats -->
@@ -34,6 +35,7 @@
     <img src="https://github-readme-stats.vercel.app/api/pin/?username=OnePaperHoon&repo=42Seoul&theme=dark" />
     </a>
 </div>
+
 
 <div align="left">
   <h2>EDUCATION</h2>
