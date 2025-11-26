@@ -6,9 +6,6 @@
     <a href="https://github-readme-stats.vercel.app/api?username=OnePaperHoon">
       <img height="195" src="https://github-readme-stats.vercel.app/api/top-langs/?username=OnePaperHoon&layout=compact&count_private=true&show_icons=true&theme=dark&hide_border=false" />
     </a>
-    <a href="https://github-readme-stats.vercel.app/api?username=OnePaperHoon">
-      <img height="195" src="https://github-readme-stats.vercel.app/api?username=OnePaperHoon&layout=compact&count_private=true&show_icons=true&theme=dark&hide_border=false&hide_rank=false" />
-    </a>
   </p>
   <!-- 구분선 -->
   <hr>
