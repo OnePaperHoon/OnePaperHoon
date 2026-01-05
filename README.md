@@ -1,14 +1,5 @@
 # **Hi, I'm OnePaperHoon**
-<hr>
-<div align="left" style="max-width: 600px; margin: auto;">
-  <!-- GitHub Readme Stats -->
-  <p>
-    <a href="https://github-readme-stats.vercel.app/api?username=OnePaperHoon">
-      <img height="195" src="https://github-readme-stats.vercel.app/api/top-langs/?username=OnePaperHoon&layout=compact&count_private=true&show_icons=true&theme=dark&hide_border=false" />
-    </a>
-  </p> 
-  <!-- 구분선 -->
-  <hr>
+
   <!-- 기술 스택 -->
   <div align="left">
     <h3>Speciality</h3>
@@ -28,11 +19,6 @@
     <!-- IDE -->
     <img src="https://img.shields.io/badge/Visual_Studio_Code-0078D4?style=for-the-badge&logo=visual%20studio%20code&logoColor=white" />
   </div>
-  <h2 align="left" >My Project</h2>
-  
-   <a href="https://github.com/OnePaperHoon/42Seoul">
-    <img src="https://github-readme-stats.vercel.app/api/pin/?username=OnePaperHoon&repo=42Seoul&theme=dark" />
-    </a>
 </div>
 
 
