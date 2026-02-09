@@ -49,11 +49,19 @@
 
 <div align="center">
 
-![GitHub Stats](https://github-readme-stats.vercel.app/api?username=OnePaperHoon&show_icons=true&theme=tokyonight&hide_border=true&count_private=true)
+![Profile Details](https://github-profile-summary-cards.vercel.app/api/cards/profile-details?username=OnePaperHoon&theme=tokyonight)
+
+![Stats](https://github-profile-summary-cards.vercel.app/api/cards/stats?username=OnePaperHoon&theme=tokyonight)
+![Top Langs by Repo](https://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=OnePaperHoon&theme=tokyonight)
 
 ![GitHub Streak](https://streak-stats.demolab.com/?user=OnePaperHoon&theme=tokyonight&hide_border=true)
 
-![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=OnePaperHoon&layout=compact&theme=tokyonight&hide_border=true&langs_count=8)
+![Top Langs by Commit](https://github-profile-summary-cards.vercel.app/api/cards/most-commit-language?username=OnePaperHoon&theme=tokyonight)
+![Productive Time](https://github-profile-summary-cards.vercel.app/api/cards/productive-time?username=OnePaperHoon&theme=tokyonight&utcOffset=9)
+
+![Activity Graph](https://github-readme-activity-graph.vercel.app/graph?username=OnePaperHoon&theme=tokyo-night&hide_border=true)
+
+![Trophies](https://github-trophies.vercel.app/?username=OnePaperHoon&theme=tokyonight&no-frame=true&column=7)
 
 </div>
 
