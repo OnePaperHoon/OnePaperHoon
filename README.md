@@ -48,9 +48,7 @@
 ## GitHub Stats
 
 <div align="center">
-
-![Profile Details](https://github-profile-summary-cards.vercel.app/api/cards/profile-details?username=OnePaperHoon&theme=tokyonight)
-
+  
 ![Stats](https://github-profile-summary-cards.vercel.app/api/cards/stats?username=OnePaperHoon&theme=tokyonight)
 ![Top Langs by Repo](https://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=OnePaperHoon&theme=tokyonight)
 
@@ -58,11 +56,6 @@
 
 ![Top Langs by Commit](https://github-profile-summary-cards.vercel.app/api/cards/most-commit-language?username=OnePaperHoon&theme=tokyonight)
 ![Productive Time](https://github-profile-summary-cards.vercel.app/api/cards/productive-time?username=OnePaperHoon&theme=tokyonight&utcOffset=9)
-
-![Activity Graph](https://github-readme-activity-graph.vercel.app/graph?username=OnePaperHoon&theme=tokyo-night&hide_border=true)
-
-![Trophies](https://github-trophies.vercel.app/?username=OnePaperHoon&theme=tokyonight&no-frame=true&column=7)
-
 </div>
 
 ---
@@ -86,10 +79,6 @@
 | **ft_ping** | ICMP Echo Request/Reply, Raw Socket, RTT 측정 | `C` |
 | **Philosophers** | 프로세스 동기화 및 동시성 제어 | `C` |
 
-### DrawMade Server
-> 백엔드 서비스 (Kakao OAuth 2.0, JWT 인증, GitHub Actions CI/CD → EC2 배포)
-> `Node.js` `Express` `MongoDB`
-
 ---
 
 ## Education
@@ -105,7 +94,7 @@
 
 - **Linux Kernel** — 커널 드라이버, Embedded RTOS
 - **Rust** — 시스템 프로그래밍 확장
-- **CS Fundamentals** — 알고리즘, OS, 네트워크, 데이터베이스 (매일 1주제 파인만 기법 학습)
+- **CS Fundamentals** — 알고리즘, OS, 네트워크, 데이터베이스
 
 ---
 
