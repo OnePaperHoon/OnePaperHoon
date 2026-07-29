@@ -1,0 +1,690 @@
+#!/usr/bin/env python3
+"""Draw the profile README's stat graphics straight from the GitHub GraphQL API.
+
+Standard library only -- no third-party service sits between the data and the
+page, so nothing here can rate-limit, change its output, or go dark. That is the
+whole point: every graphic is generated and committed, not hotlinked.
+
+Outputs, all sharing one visual language with the wordmark:
+    stats.svg   contributions total, active days, best week, weekly sparkline
+    streak.svg  current and longest run of contributing days
+    langs.svg   top languages, by bytes written and by repo count
+    year.svg    the last year as a character map, in the wordmark's own ramp
+    hd-*.svg    section headings, so they carry the page's typeface
+
+Motion is SMIL: GitHub strips <script> from READMEs, so a declarative animation
+inside the SVG is the only kind that survives.
+
+Env:
+    GITHUB_TOKEN  required
+    GH_LOGIN      user to summarise (default: OnePaperHoon)
+    OUT_DIR       where to write   (default: repository root)
+"""
+import base64
+import functools
+import json
+import os
+import sys
+import urllib.request
+from datetime import date, datetime, timedelta, timezone
+
+ENDPOINT = "https://api.github.com/graphql"
+
+# Two things are pinned deliberately:
+#   privacy: PUBLIC  -- a personal token sees private repos and the workflow
+#     token does not, so without this the language totals disagree run to run.
+#   isFork: false    -- forks would count someone else's bytes as yours.
+QUERY = """
+query($login: String!, $from: DateTime!, $to: DateTime!) {
+  user(login: $login) {
+    contributionsCollection(from: $from, to: $to) {
+      contributionCalendar {
+        totalContributions
+        weeks { contributionDays { contributionCount date weekday } }
+      }
+    }
+    repositories(first: 100, ownerAffiliations: OWNER, isFork: false,
+                 privacy: PUBLIC) {
+      nodes {
+        languages(first: 12, orderBy: {field: SIZE, direction: DESC}) {
+          edges { size node { name } }
+        }
+      }
+    }
+    recent: repositories(first: 20, ownerAffiliations: OWNER, isFork: false,
+                         privacy: PUBLIC,
+                         orderBy: {field: PUSHED_AT, direction: DESC}) {
+      nodes {
+        name
+        pushedAt
+        primaryLanguage { name }
+        defaultBranchRef {
+          target {
+            ... on Commit {
+              history(first: 100) {
+                nodes { committedDate author { user { login } } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+FONT_DIR = os.path.join(HERE, "fonts")
+
+# One ink for data, one for emphasis, one for muted labels, plus a hairline and
+# the page surface. Kept close to GitHub's own greys so the page sits in its
+# container rather than on top of it.
+PALETTE = {
+    "light": dict(ink="#6e7681", strong="#424a53", muted="#8c959f",
+                  line="#d8dee4", surface="#ffffff", wash=0.13),
+    "dark": dict(ink="#c9d1d9", strong="#f0f6fc", muted="#8b949e",
+                 line="#30363d", surface="#0d1117", wash=0.16),
+}
+STACK = ("JBMono,ui-monospace,SFMono-Regular,Menlo,Consolas,"
+         "&apos;Liberation Mono&apos;,monospace")
+
+COL = 820                       # every graphic shares one column width
+GUTTER = 34                     # left inset; year.svg needs it for weekday labels
+SWEEP = 1.25                    # seconds for a full left-to-right reveal
+RAMP = [" ", ":", "+", "#", "@"]
+MONTHS = ["jan", "feb", "mar", "apr", "may", "jun",
+          "jul", "aug", "sep", "oct", "nov", "dec"]
+
+
+# ------------------------------------------------------------------ typeface
+
+@functools.lru_cache(maxsize=None)
+def _face(filename, weight):
+    with open(os.path.join(FONT_DIR, filename), "rb") as fh:
+        blob = base64.b64encode(fh.read()).decode("ascii")
+    return (f"@font-face{{font-family:JBMono;font-style:normal;"
+            f"font-weight:{weight};font-display:block;"
+            f"src:url(data:font/woff2;base64,{blob}) format('woff2')}}")
+
+
+def face_body():
+    """Both weights of basic latin -- numbers and labels."""
+    return _face("jbmono-400.woff2", 400) + _face("jbmono-600.woff2", 600)
+
+
+def face_heading():
+    """Only the letters the section headings spell."""
+    return _face("jbmono-head.woff2", 600)
+
+
+# ---------------------------------------------------------------------- data
+
+def utc_window():
+    """A whole-day window, so the buckets do not drift with request time.
+
+    Measuring "the past year" from the current instant shifts days between week
+    buckets, which nudges the sparkline a fraction of a pixel and commits noise
+    every single night.
+    """
+    today = datetime.now(timezone.utc).date()
+    start = today - timedelta(days=364)
+    return f"{start.isoformat()}T00:00:00Z", f"{today.isoformat()}T23:59:59Z"
+
+
+def fetch(login, token):
+    since, until = utc_window()
+    payload = json.dumps({
+        "query": QUERY,
+        "variables": {"login": login, "from": since, "to": until},
+    }).encode()
+    request = urllib.request.Request(ENDPOINT, data=payload, headers={
+        "Authorization": f"bearer {token}",
+        "Content-Type": "application/json",
+        "User-Agent": f"{login}-profile-stats",
+    })
+    with urllib.request.urlopen(request, timeout=30) as response:
+        body = json.load(response)
+    if "errors" in body:
+        raise SystemExit(f"GraphQL errors: {body['errors']}")
+    user = (body.get("data") or {}).get("user")
+    if not user:
+        raise SystemExit(f"no such user: {login}")
+    return user
+
+
+def short_date(iso):
+    d = date.fromisoformat(iso)
+    return f"{MONTHS[d.month - 1]} {d.day}"
+
+
+def find_streaks(days):
+    """Longest and current runs of days carrying at least one contribution.
+
+    A zero on the final day does not end the current streak -- that day is still
+    in progress. Any earlier zero does.
+    """
+    longest = dict(length=0, start=None, end=None)
+    run = 0
+    run_start = None
+    for day in days:
+        if day["contributionCount"] > 0:
+            run += 1
+            run_start = run_start or day["date"]
+            if run > longest["length"]:
+                longest = dict(length=run, start=run_start, end=day["date"])
+        else:
+            run, run_start = 0, None
+
+    current = dict(length=0, start=None, end=None)
+    trail = days[:-1] if days and days[-1]["contributionCount"] == 0 else days
+    for day in reversed(trail):
+        if day["contributionCount"] == 0:
+            break
+        current["length"] += 1
+        current["start"] = day["date"]
+        current["end"] = current["end"] or day["date"]
+    return current, longest
+
+
+def rank_languages(repos):
+    """Totals by bytes written, and counts by each repo's primary language."""
+    bytes_by = {}
+    repos_by = {}
+    for node in repos:
+        edges = (node.get("languages") or {}).get("edges") or []
+        for edge in edges:
+            name = edge["node"]["name"]
+            bytes_by[name] = bytes_by.get(name, 0) + edge["size"]
+        if edges:
+            primary = edges[0]["node"]["name"]
+            repos_by[primary] = repos_by.get(primary, 0) + 1
+
+    def top5(table):
+        # name is the tiebreak, so equal values never swap places between runs
+        return sorted(table.items(), key=lambda kv: (-kv[1], kv[0]))[:5]
+
+    return top5(bytes_by), top5(repos_by)
+
+
+def commit_clock(repos, login, offset_hours):
+    """Commits bucketed by local hour of day, across the recently pushed repos.
+
+    Authorship is filtered here rather than in the query: the history connection
+    takes an author id, which this query has no way to reference before it has
+    fetched it. Bot and co-author commits would otherwise land in the histogram.
+    """
+    hours = [0] * 24
+    counted = 0
+    for repo in repos:
+        branch = repo.get("defaultBranchRef")
+        if not branch or not branch.get("target"):
+            continue
+        for commit in branch["target"]["history"]["nodes"]:
+            who = ((commit.get("author") or {}).get("user") or {}).get("login")
+            if who != login:
+                continue
+            stamp = datetime.fromisoformat(
+                commit["committedDate"].replace("Z", "+00:00"))
+            hours[(stamp.hour + offset_hours) % 24] += 1
+            counted += 1
+    return hours, counted
+
+
+def recent_pushes(repos, limit=5):
+    today = datetime.now(timezone.utc).date()
+    out = []
+    for repo in repos[:limit]:
+        pushed = date.fromisoformat(repo["pushedAt"][:10])
+        days = (today - pushed).days
+        if days <= 0:
+            ago = "today"
+        elif days == 1:
+            ago = "yesterday"
+        elif days < 30:
+            ago = f"{days}d ago"
+        elif days < 365:
+            ago = f"{days // 30}mo ago"
+        else:
+            ago = f"{days // 365}y ago"
+        out.append(dict(name=repo["name"],
+                        lang=(repo.get("primaryLanguage") or {}).get("name", ""),
+                        ago=ago))
+    return out
+
+
+def summarise(user, login, tz_offset):
+    calendar = user["contributionsCollection"]["contributionCalendar"]
+    weeks = [w["contributionDays"] for w in calendar["weeks"]]
+    days = [d for week in weeks for d in week]
+    weekly = [sum(d["contributionCount"] for d in week) for week in weeks]
+    current, longest = find_streaks(days)
+    by_bytes, by_repos = rank_languages(user["repositories"]["nodes"])
+    recent = user["recent"]["nodes"]
+    hours, clock_total = commit_clock(recent, login, tz_offset)
+    return dict(
+        hours=hours,
+        clock_total=clock_total,
+        recent=recent_pushes(recent),
+        total=calendar["totalContributions"],
+        active=sum(1 for d in days if d["contributionCount"] > 0),
+        span=len(days),
+        best_week=max(weekly) if weekly else 0,
+        weekly=weekly,
+        weeks=weeks,
+        current=current,
+        longest=longest,
+        by_bytes=by_bytes,
+        by_repos=by_repos,
+    )
+
+
+# ------------------------------------------------------------------- drawing
+
+def _classes(theme):
+    t = PALETTE[theme]
+    return (f".ink{{fill:{t['ink']}}}.ink-s{{stroke:{t['ink']}}}"
+            f".strong{{fill:{t['strong']}}}.muted{{fill:{t['muted']}}}"
+            f".rule{{stroke:{t['line']}}}.knockout{{stroke:{t['surface']}}}"
+            f".wash{{fill:{t['ink']};opacity:{t['wash']}}}")
+
+
+def open_svg(width, height, font=None):
+    css = (f"<style>{font or face_body()}{_classes('light')}"
+           f"@media(prefers-color-scheme:dark){{{_classes('dark')}}}</style>")
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" '
+            f'height="{height}" viewBox="0 0 {width} {height}" fill="none" '
+            f'font-family="{STACK}">{css}')
+
+
+def appear(at, dur=0.45):
+    return (f'<animate attributeName="opacity" from="0" to="1" '
+            f'begin="{at:.2f}s" dur="{dur}s" fill="freeze"/>')
+
+
+def sweep(name, x, y, w, h, at, dur=SWEEP):
+    """A left-to-right clip reveal, plus the cursor block riding its edge."""
+    clip = (f'<clipPath id="{name}"><rect x="{x}" y="{y}" height="{h}" '
+            f'width="0"><animate attributeName="width" from="0" to="{w}" '
+            f'begin="{at:.2f}s" dur="{dur}s" fill="freeze"/></rect></clipPath>')
+    cursor = (f'<rect y="{y}" width="2" height="{h}" class="ink" opacity="0">'
+              f'<animate attributeName="x" from="{x}" to="{x + w}" '
+              f'begin="{at:.2f}s" dur="{dur}s" fill="freeze"/>'
+              f'<set attributeName="opacity" to="0.55" begin="{at:.2f}s"/>'
+              f'<set attributeName="opacity" to="0" '
+              f'begin="{at + dur:.2f}s"/></rect>')
+    return clip, cursor
+
+
+def text(x, y, body, size=11, cls="muted", anchor="start", extra=""):
+    align = f' text-anchor="{anchor}"' if anchor != "start" else ""
+    return (f'<text x="{x}" y="{y}" class="{cls}" font-size="{size}"'
+            f'{align}{extra}>{body}</text>')
+
+
+def bar(x, y, w, h, radius=3.0):
+    """Rounded at the data end, square at the baseline it grows from."""
+    if w <= 0.6:
+        return ""
+    r = min(radius, h / 2.0, w)
+    return (f'<path d="M{x:.1f} {y:.1f}H{x + w - r:.1f}'
+            f'Q{x + w:.1f} {y:.1f} {x + w:.1f} {y + r:.1f}'
+            f'V{y + h - r:.1f}Q{x + w:.1f} {y + h:.1f} {x + w - r:.1f} {y + h:.1f}'
+            f'H{x:.1f}Z" class="ink"/>')
+
+
+def bar_up(x, y, w, h, radius=2.5):
+    """Vertical bar: rounded at the data end on top, square on the baseline."""
+    if h <= 0.6:
+        return ""
+    r = min(radius, w / 2.0, h)
+    return (f'<path d="M{x:.1f} {y + h:.1f}V{y + r:.1f}'
+            f'Q{x:.1f} {y:.1f} {x + r:.1f} {y:.1f}'
+            f'H{x + w - r:.1f}Q{x + w:.1f} {y:.1f} {x + w:.1f} {y + r:.1f}'
+            f'V{y + h:.1f}Z" class="ink"/>')
+
+
+def draw_stats(s):
+    height = 148
+    weekly = s["weekly"] or [0]
+    peak = max(weekly) or 1
+
+    out = [open_svg(COL, height)]
+    out.append(f'<g opacity="0">{appear(0.10)}'
+               + text(0, 50, s["total"], 52, "strong", extra=' font-weight="600"')
+               + text(0, 72, "contributions in the last year", 12) + "</g>")
+    for i, (value, caption) in enumerate([(s["active"], "active days"),
+                                          (s["best_week"], "best week")]):
+        out.append(f'<g opacity="0">{appear(0.30 + i * 0.12)}'
+                   + text(COL, 30 + i * 40, value, 19, "strong", "end",
+                          ' font-weight="600"')
+                   + text(COL, 47 + i * 40, caption, 11, "muted", "end") + "</g>")
+
+    floor, ceiling = height - 10, height - 58
+    reach = floor - ceiling
+    stride = COL / max(len(weekly) - 1, 1)
+    points = [(i * stride, floor - (v / peak) * reach)
+              for i, v in enumerate(weekly)]
+
+    clip, cursor = sweep("sp", 0, ceiling - 6, COL, reach + 8, 0.50)
+    out.append(clip)
+    out.append('<g clip-path="url(#sp)">')
+    out.append(f'<path d="M{points[0][0]:.1f} {floor:.1f}'
+               + "".join(f"L{x:.1f} {y:.1f}" for x, y in points)
+               + f'L{points[-1][0]:.1f} {floor:.1f}Z" class="wash"/>')
+    out.append(f'<path d="M{points[0][0]:.1f} {points[0][1]:.1f}'
+               + "".join(f"L{x:.1f} {y:.1f}" for x, y in points[1:])
+               + '" class="ink-s" stroke-width="2" stroke-linejoin="round" '
+                 'stroke-linecap="round"/>')
+    out.append("</g>")
+    out.append(cursor)
+    ex, ey = points[-1]
+    out.append(f'<circle cx="{ex - 2:.1f}" cy="{ey:.1f}" r="4.5" '
+               f'class="strong knockout" stroke-width="2" opacity="0">'
+               f'{appear(0.50 + SWEEP, 0.35)}</circle>')
+    out.append("</svg>")
+    return "".join(out)
+
+
+def draw_streak(s):
+    height = 96
+    panels = []
+    for key, caption in (("current", "current streak"),
+                         ("longest", "longest streak")):
+        run = s[key]
+        window = (f"{short_date(run['start'])} &#8211; {short_date(run['end'])}"
+                  if run["length"] else "&#8212;")
+        panels.append((run["length"], caption, window))
+
+    out = [open_svg(COL, height)]
+    mid = COL / 2
+    out.append(f'<line x1="{mid:.0f}" y1="16" x2="{mid:.0f}" y2="80" '
+               f'class="rule" stroke-width="1" opacity="0">{appear(0.20)}</line>')
+    for i, (value, caption, window) in enumerate(panels):
+        x = GUTTER if i == 0 else mid + GUTTER
+        out.append(f'<g opacity="0">{appear(0.12 + i * 0.14)}'
+                   + text(x, 44, value, 34, "strong", extra=' font-weight="600"')
+                   + text(x, 64, caption, 11)
+                   + text(x, 80, window, 10) + "</g>")
+    out.append("</svg>")
+    return "".join(out)
+
+
+def draw_langs(s):
+    lines = max(len(s["by_bytes"]), len(s["by_repos"]), 1)
+    height = 26 + lines * 22 + 6
+    half = (COL - GUTTER - 30) / 2
+    name_col = 92
+    bar_room = half - name_col - 48
+
+    out = [open_svg(COL, height)]
+    panels = [(GUTTER, "by bytes", s["by_bytes"], True),
+              (GUTTER + half + 30, "by repos", s["by_repos"], False)]
+    for pi, (px, title, rows, as_share) in enumerate(panels):
+        out.append(f'<g opacity="0">{appear(0.10 + pi * 0.10)}'
+                   + text(px, 12, title.upper(), 9, "muted",
+                          extra=' letter-spacing="1.3"') + "</g>")
+        if not rows:
+            continue
+        biggest = max(v for _, v in rows) or 1
+        total = sum(v for _, v in rows) or 1
+        name = f"lg{pi}"
+        clip, cursor = sweep(name, px + name_col, 20, bar_room, lines * 22,
+                             0.34 + pi * 0.12, 0.95)
+        out.append(clip)
+        for ri, (label, value) in enumerate(rows):
+            y = 26 + ri * 22
+            readout = f"{value / total * 100:.0f}%" if as_share else f"{value}"
+            out.append(f'<g opacity="0">{appear(0.24 + pi * 0.10 + ri * 0.05)}'
+                       + text(px, y + 8, label.lower()[:12], 11, "strong")
+                       + text(px + half - 6, y + 8, readout, 11, "muted", "end")
+                       + "</g>")
+            out.append(f'<g clip-path="url(#{name})">'
+                       + bar(px + name_col, y, bar_room * value / biggest, 7)
+                       + "</g>")
+        out.append(cursor)
+    out.append("</svg>")
+    return "".join(out)
+
+
+def draw_year(s):
+    """Seven rows by fifty-three weeks, intensity encoded as a character."""
+    size, line_h, cells = 9.2, 11.0, 2
+    char_w = size * 0.6
+    left, top = GUTTER, 44
+    weeks = s["weeks"]
+    height = int(top + 7 * line_h + 26)
+
+    def level(count):
+        for i, cut in enumerate((0, 2, 5, 9)):
+            if count <= cut:
+                return i
+        return 4
+
+    out = [open_svg(COL, height)]
+    out.append(f'<g opacity="0">{appear(0.10)}'
+               + text(left, 16, "THE YEAR", 9, "muted",
+                      extra=' letter-spacing="1.3"')
+               + text(left, 32,
+                      f"{s['active']} of {s['span']} days had a contribution", 11)
+               + "</g>")
+
+    # a ramp legend, so intensity is never carried by density alone
+    right = COL - 6
+    out.append(f'<g opacity="0">{appear(1.30)}'
+               + text(right - 78, 32, "less", 9, "muted", "end")
+               + f'<text xml:space="preserve" x="{right - 72}" y="32" '
+                 f'class="ink" font-size="{size}">{" ".join(RAMP[1:])}</text>'
+               + text(right, 32, "more", 9, "muted", "end") + "</g>")
+
+    for row in range(7):
+        glyphs = []
+        for week in weeks:
+            day = next((d for d in week if d.get("weekday") == row), None)
+            glyphs.append(RAMP[level(day["contributionCount"] if day else 0)] * cells)
+        line = "".join(glyphs).rstrip()
+        if not line:
+            continue
+        y = top + row * line_h
+        width_px = max(len(line), 1) * char_w
+        name = f"yr{row}"
+        at = 0.30 + row * 0.07
+        out.append(f'<clipPath id="{name}"><rect x="{left}" y="{y}" '
+                   f'height="{line_h}" width="0"><animate '
+                   f'attributeName="width" from="0" to="{width_px:.1f}" '
+                   f'begin="{at:.2f}s" dur="0.40s" fill="freeze"/></rect>'
+                   f'</clipPath>')
+        safe = line.replace("&", "&amp;").replace("<", "&lt;")
+        out.append(f'<g clip-path="url(#{name})"><text xml:space="preserve" '
+                   f'x="{left}" y="{y + size - 0.6:.1f}" class="ink" '
+                   f'font-size="{size}">{safe}</text></g>')
+
+    for row, caption in ((1, "mon"), (3, "wed"), (5, "fri")):
+        out.append(text(left - 7, top + row * line_h + size - 0.6, caption, 9,
+                        "muted", "end"))
+
+    seen_month, last_x = None, -999.0
+    baseline = top + 7 * line_h + 13
+    for i, week in enumerate(weeks):
+        month = int(week[0]["date"][5:7])
+        x = left + i * cells * char_w
+        if month != seen_month and i < len(weeks) - 1 and x - last_x >= 34:
+            out.append(text(x, baseline, MONTHS[month - 1], 9, "muted"))
+            last_x = x
+        seen_month = month
+
+    out.append("</svg>")
+    return "".join(out)
+
+
+def draw_clock(s, tz_label):
+    """Commits by hour of day, as vertical bars.
+
+    The page already spends its character ramp on the year map; showing the day
+    the same way would read as a second calendar. Bars keep the two apart.
+    """
+    height = 132
+    hours = s["hours"]
+    peak = max(hours) or 1
+    total = s["clock_total"]
+
+    left = GUTTER
+    room = COL - left - 10
+    slot = room / 24.0
+    bar_w = slot * 0.62
+    floor, top = height - 30, 42
+
+    out = [open_svg(COL, height)]
+    out.append(f'<g opacity="0">{appear(0.10)}'
+               + text(left, 16, "THE DAY", 9, "muted",
+                      extra=' letter-spacing="1.3"')
+               + text(left, 32,
+                      f"{total} commits by hour, {tz_label}", 11) + "</g>")
+
+    busiest = hours.index(peak)
+    out.append(f'<g opacity="0">{appear(1.20)}'
+               + text(COL - 6, 32, f"busiest around {busiest:02d}:00", 9,
+                      "muted", "end") + "</g>")
+
+    clip, cursor = sweep("cl", left, top - 6, room, floor - top + 8, 0.34, 1.00)
+    out.append(clip)
+    out.append('<g clip-path="url(#cl)">')
+    for h, count in enumerate(hours):
+        x = left + h * slot + (slot - bar_w) / 2
+        tall = (count / peak) * (floor - top)
+        # a hairline base keeps an empty hour visible as a considered zero
+        out.append(f'<rect x="{x:.1f}" y="{floor - 1:.1f}" width="{bar_w:.1f}" '
+                   f'height="1" class="wash"/>')
+        if tall > 0.5:
+            out.append(bar_up(x, floor - tall, bar_w, tall))
+    out.append("</g>")
+    out.append(cursor)
+
+    for h in range(0, 24, 3):
+        x = left + h * slot + slot / 2
+        out.append(text(x, floor + 15, f"{h:02d}", 9, "muted", "middle"))
+    out.append("</svg>")
+    return "".join(out)
+
+
+def draw_recent(s):
+    """The last handful of repositories to receive a push."""
+    rows = s["recent"] or []
+    height = 26 + max(len(rows), 1) * 20 + 6
+
+    out = [open_svg(COL, height)]
+    out.append(f'<g opacity="0">{appear(0.10)}'
+               + text(GUTTER, 12, "RECENTLY PUSHED", 9, "muted",
+                      extra=' letter-spacing="1.3"') + "</g>")
+    for i, repo in enumerate(rows):
+        y = 26 + i * 20
+        out.append(f'<g opacity="0">{appear(0.20 + i * 0.07)}'
+                   + text(GUTTER, y + 8, repo["name"][:28], 12, "strong")
+                   + text(GUTTER + 300, y + 8, repo["lang"].lower(), 11, "muted")
+                   + text(COL - 6, y + 8, repo["ago"], 11, "muted", "end")
+                   + "</g>")
+    out.append("</svg>")
+    return "".join(out)
+
+
+# What the page says it works in. Authored, not derived -- langs.svg already
+# reports what the bytes actually say, and the two are answering different
+# questions.
+STACK = [
+    ("languages", "typescript  c  c++  rust"),
+    ("runtime", "node  react  react native"),
+    ("data", "cloudflare d1  drizzle  sqlite  mongodb"),
+    ("infra", "cloudflare workers  docker  nginx  linux  git"),
+]
+
+
+def draw_stack():
+    """The stack as drawn type, so it carries the page's face like the headings.
+
+    Left as markdown it would render in GitHub's own monospace -- the one place
+    on the page where the typeface breaks.
+    """
+    height = 12 + len(STACK) * 24 + 6
+    out = [open_svg(COL, height)]
+    for i, (label, items) in enumerate(STACK):
+        y = 12 + i * 24
+        out.append(f'<g opacity="0">{appear(0.10 + i * 0.09)}'
+                   + text(GUTTER, y + 12, label.upper(), 9, "muted",
+                          extra=' letter-spacing="1.3"')
+                   + text(GUTTER + 110, y + 12, items, 12, "strong")
+                   + "</g>")
+    out.append("</svg>")
+    return "".join(out)
+
+
+def draw_heading(word):
+    """A section label in the page's own typeface, with a rule running right.
+
+    GitHub strips <style> and style= from markdown, so a real markdown heading
+    can only ever render in GitHub's sans. An image is the only way to put this
+    page's face on it. The rule starts past the widest plausible advance, so a
+    narrower fallback font opens a slightly bigger gap rather than colliding.
+    """
+    size, height = 16, 26
+    ends_at = len(word) * size * 0.6 + 18
+    out = [open_svg(COL, height, font=face_heading())]
+    out.append(text(0, 18, word, size, "strong", extra=' font-weight="600"'))
+    out.append(f'<line x1="{ends_at:.0f}" y1="12.5" x2="{COL}" y2="12.5" '
+               f'class="rule" stroke-width="1"/>')
+    out.append("</svg>")
+    return "".join(out)
+
+
+# ---------------------------------------------------------------------- main
+
+def write_if_changed(path, svg):
+    previous = ""
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as fh:
+            previous = fh.read()
+    if previous == svg:
+        return False
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(svg)
+    return True
+
+
+HEADINGS = ["about", "stack", "projects", "stats", "algorithm"]
+
+
+def main():
+    token = os.environ.get("GITHUB_TOKEN")
+    if not token:
+        sys.exit("GITHUB_TOKEN is not set")
+    login = os.environ.get("GH_LOGIN", "OnePaperHoon")
+    out_dir = os.environ.get("OUT_DIR", ".")
+    tz_offset = int(os.environ.get("TZ_OFFSET", "9"))
+    tz_label = os.environ.get("TZ_LABEL", "KST")
+
+    s = summarise(fetch(login, token), login, tz_offset)
+    files = {
+        "stats.svg": draw_stats(s),
+        "streak.svg": draw_streak(s),
+        "langs.svg": draw_langs(s),
+        "year.svg": draw_year(s),
+        "clock.svg": draw_clock(s, tz_label),
+        "recent.svg": draw_recent(s),
+        "stack.svg": draw_stack(),
+    }
+    for word in HEADINGS:
+        files[f"hd-{word.replace(' ', '-')}.svg"] = draw_heading(word)
+
+    changed = [name for name, svg in files.items()
+               if write_if_changed(os.path.join(out_dir, name), svg)]
+
+    print(f"{s['total']} contributions, {s['active']}/{s['span']} active days, "
+          f"best week {s['best_week']}, current streak {s['current']['length']}, "
+          f"longest {s['longest']['length']}")
+    print("by bytes: " + (", ".join(f"{n} {v}" for n, v in s["by_bytes"]) or "-"))
+    print(f"clock: {s['clock_total']} authored commits, busiest "
+          f"{s['hours'].index(max(s['hours'])):02d}:00 {tz_label}")
+    print("recent: " + ", ".join(f"{r['name']} ({r['ago']})" for r in s["recent"]))
+    print("updated: " + (", ".join(sorted(changed)) if changed else "nothing"))
+
+
+if __name__ == "__main__":
+    main()

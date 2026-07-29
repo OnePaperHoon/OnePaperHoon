@@ -1,104 +1,63 @@
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=28&pause=1000&color=4C8EDA&vCenter=true&width=500&lines=Hi%2C+I'm+OnePaperHoon+%F0%9F%91%8B;Systems+%26+Backend+Developer;42Seoul+Member)](https://git.io/typing-svg)
+<div align="center">
 
-## About Me
+<img src="./ascii.svg" width="820" alt="OnePaperHoon"/>
 
-- **42Seoul (École 42)** Member, diving deep into Computer Science
-- Systems programming in **C/C++** & building backend services with **Node.js**
-- Currently exploring **Rust** and **Linux Kernel** internals
-- Passionate about low-level programming, networking, and full-stack development
+<img src="./stats.svg" width="820" alt="Contributions in the last year"/>
 
----
-
-## Tech Stack
-
-<div align="left">
-
-### Languages
-![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)
-![C++](https://img.shields.io/badge/C%2B%2B-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=JavaScript&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)
-
-### Backend & Database
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)
-![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
-![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=for-the-badge&logo=mariadb&logoColor=white)
-
-### Frontend & Mobile
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white)
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
-
-### DevOps & Tools
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
-![AWS](https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazonwebservices&logoColor=white)
-![VS Code](https://img.shields.io/badge/VS_Code-007ACC?style=for-the-badge&logo=visual-studio-code&logoColor=white)
-![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
+[feedline.kr](https://feedline.kr) &nbsp;·&nbsp;
+[solved.ac](https://solved.ac/wkdgns720)
 
 </div>
 
----
+<img src="./hd-about.svg" width="820" alt="about"/>
 
-## GitHub Stats
+> 서울에서 서비스 만드는 개발자예요.<br>
+> 여기저기 흩어져 있는 정보를 한곳에 모아 쓸 만하게 만드는 일을 좋아합니다.
+
+<samp>2026.05 &#8211; present &nbsp;&nbsp; Shopinx &nbsp;·&nbsp; 서비스 개발</samp><br>
+<samp>2025.06 &#8211; 2025.12 &nbsp;&nbsp; Newtonz &nbsp;·&nbsp; 개발 총괄</samp><br>
+<samp>2025.03 &#8211; present &nbsp;&nbsp; 42Seoul &nbsp;·&nbsp; member</samp><br>
+<samp>2023.09 &#8211; 2025.03 &nbsp;&nbsp; 42Seoul &nbsp;·&nbsp; learner (École 42)</samp>
+
+<img src="./hd-stack.svg" width="820" alt="stack"/>
+
+<img src="./stack.svg" width="820" alt="languages, runtime, data, infra"/>
+
+<img src="./hd-projects.svg" width="820" alt="projects"/>
+
+**[FeedLine](https://feedline.kr)** &nbsp;·&nbsp; <samp>typescript, cloudflare workers, d1</samp><br>
+마케팅 소식이 검색, 광고, 소셜, 뉴스레터로 뿔뿔이 흩어져 있는 게 늘<br>
+불편했어요. 그래서 직접 만든 개인용 정보 허브입니다. 67개 소스를 15분마다<br>
+훑어서 중복을 걷어내고, AI로 분석하고 번역한 다음, 지금 읽을 만한 것만<br>
+골라서 브리핑으로 보여줍니다. 어떤 소스가 조용해지면 그것도 알려주고요.
+
+**[YenWatch](https://github.com/OnePaperHoon/RateBot)** &nbsp;·&nbsp; <samp>typescript, raspberry pi</samp><br>
+라즈베리파이에 올려두고 24시간 돌리는 엔화 환율 봇이에요. 처음엔 매분 새<br>
+메시지를 보냈는데 채널이 알림으로 도배돼서 오히려 안 보게 되더라고요.<br>
+그래서 메시지 하나만 만들어 두고 그것만 계속 고쳐 쓰는 방식으로 바꿨습니다.<br>
+알림도 환율이 기준선을 넘는 순간에만 한 번 갑니다.
+
+**[ClaudeCodeAlert](https://github.com/OnePaperHoon/ClaudeCodeAlert)** &nbsp;·&nbsp;
+**[CodexAlert](https://github.com/OnePaperHoon/CodexAlert)** &nbsp;·&nbsp; <samp>typescript</samp><br>
+긴 작업 걸어두고 딴짓하다가 끝난 걸 놓치는 일이 잦아서 만든 CLI 알림<br>
+라이브러리 두 개예요.
+
+<img src="./recent.svg" width="820" alt="Recently pushed repositories"/>
+
+<img src="./hd-stats.svg" width="820" alt="stats"/>
 
 <div align="center">
-  
-![Stats](https://github-profile-summary-cards.vercel.app/api/cards/stats?username=OnePaperHoon&theme=tokyonight)
-![Top Langs by Repo](https://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=OnePaperHoon&theme=tokyonight)
 
-![GitHub Streak](https://streak-stats.demolab.com/?user=OnePaperHoon&theme=tokyonight&hide_border=true)
+<img src="./streak.svg" width="820" alt="Current and longest streak"/>
 
-![Top Langs by Commit](https://github-profile-summary-cards.vercel.app/api/cards/most-commit-language?username=OnePaperHoon&theme=tokyonight)
-![Productive Time](https://github-profile-summary-cards.vercel.app/api/cards/productive-time?username=OnePaperHoon&theme=tokyonight&utcOffset=9)
+<img src="./langs.svg" width="820" alt="Top languages by bytes and by repo"/>
+
+<img src="./year.svg" width="820" alt="The last year, one character per day"/>
+
+<img src="./clock.svg" width="820" alt="Commits by hour of day"/>
+
 </div>
 
----
+<img src="./hd-algorithm.svg" width="820" alt="algorithm"/>
 
-## Featured Projects
-
-### Newtonz — Smart Fitness App
-> NFC 기반 스마트 피트니스 장비 연동 모바일 앱
-> `React Native` `Expo` `Node.js` `MongoDB` `AWS Cognito` `Kakao OAuth`
-- 실시간 운동 데이터 트래킹 및 통계 시각화
-- 식단 관리 기능
-- 멀티플랫폼 지원 (iOS, Android, Web)
-
-### 42Seoul Projects
-| Project | Description | Tech |
-|---------|-------------|------|
-| **minishell** | Unix shell 구현 (pipes, redirections, heredoc, signal handling) | `C` |
-| **IRC** | IRC 서버 구현 (RFC 2812, BSD Sockets, 채널 관리) | `C++` |
-| **Inception** | Docker 인프라 구축 (Nginx, WordPress, MariaDB, Redis, SSL/TLS) | `Docker` `Docker Compose` |
-| **Cub3D** | Raycasting 기반 3D 그래픽 엔진 | `C` `MiniLibX` |
-| **ft_ping** | ICMP Echo Request/Reply, Raw Socket, RTT 측정 | `C` |
-| **Philosophers** | 프로세스 동기화 및 동시성 제어 | `C` |
-
----
-
-## Education
-
-| Period | Institution | Status |
-|--------|------------|--------|
-| 2025.03 ~ | **École 42 (42Seoul)** — Computer Science | Member |
-| 2023.09 ~ 2025.03 | **École 42 (42Seoul)** — Computer Science | Learner |
-
----
-
-## Currently Studying
-
-- **Linux Kernel** — 커널 드라이버, Embedded RTOS
-- **Rust** — 시스템 프로그래밍 확장
-- **CS Fundamentals** — 알고리즘, OS, 네트워크, 데이터베이스
-
----
-
-## Algorithm
-
-[![Solved.ac Profile](http://mazassumnida.wtf/api/v2/generate_badge?boj=wkdgns720)](https://solved.ac/wkdgns720)
-
+[![solved.ac](https://mazassumnida.wtf/api/v2/generate_badge?boj=wkdgns720)](https://solved.ac/wkdgns720)
