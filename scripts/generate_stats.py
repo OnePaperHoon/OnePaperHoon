@@ -7,13 +7,17 @@ whole point: every graphic is generated and committed, not hotlinked.
 
 Outputs, all sharing one visual language with the wordmark:
     stats.svg   contributions total, active days, best week, weekly sparkline
+    clock.svg   commits by hour of day
+    recent.svg  the repositories most recently pushed to
+    stack.svg   what the page says it works in
     streak.svg  current and longest run of contributing days
     langs.svg   top languages, by bytes written and by repo count
-    year.svg    the last year as a character map, in the wordmark's own ramp
+    heatmap.svg the last year as the familiar grid of contribution boxes
     hd-*.svg    section headings, so they carry the page's typeface
 
-Motion is SMIL: GitHub strips <script> from READMEs, so a declarative animation
-inside the SVG is the only kind that survives.
+Motion is declarative because GitHub strips <script> from READMEs: SMIL for
+most graphics, CSS keyframes for heatmap.svg so its 365 moving parts can be
+put behind prefers-reduced-motion.
 
 Env:
     GITHUB_TOKEN  required
@@ -85,11 +89,11 @@ PALETTE = {
     "dark": dict(ink="#c9d1d9", strong="#f0f6fc", muted="#8b949e",
                  line="#30363d", surface="#0d1117", wash=0.16),
 }
-STACK = ("JBMono,ui-monospace,SFMono-Regular,Menlo,Consolas,"
-         "&apos;Liberation Mono&apos;,monospace")
+FONT_STACK = ("JBMono,ui-monospace,SFMono-Regular,Menlo,Consolas,"
+              "&apos;Liberation Mono&apos;,monospace")
 
 COL = 820                       # every graphic shares one column width
-GUTTER = 34                     # left inset; year.svg needs it for weekday labels
+GUTTER = 34                     # left inset; the heatmap needs it for weekday labels
 SWEEP = 1.25                    # seconds for a full left-to-right reveal
 RAMP = [" ", ":", "+", "#", "@"]
 MONTHS = ["jan", "feb", "mar", "apr", "may", "jun",
@@ -293,7 +297,7 @@ def open_svg(width, height, font=None):
            f"@media(prefers-color-scheme:dark){{{_classes('dark')}}}</style>")
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" '
             f'height="{height}" viewBox="0 0 {width} {height}" fill="none" '
-            f'font-family="{STACK}">{css}')
+            f'font-family="{FONT_STACK}">{css}')
 
 
 def appear(at, dur=0.45):
@@ -446,13 +450,28 @@ def draw_langs(s):
     return "".join(out)
 
 
-def draw_year(s):
-    """Seven rows by fifty-three weeks, intensity encoded as a character."""
-    size, line_h, cells = 9.2, 11.0, 2
-    char_w = size * 0.6
-    left, top = GUTTER, 44
+# GitHub's own two ramps. The empty cell is the reason both are needed: at
+# #161b22 it is nearly black, which reads as a dark grid stamped on a white page
+# for anyone browsing in the light theme.
+HEAT_LIGHT = ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"]
+HEAT_DARK = ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"]
+
+
+def draw_heatmap(s):
+    """The year as the familiar grid of rounded, coloured boxes.
+
+    Animated with CSS keyframes rather than SMIL. Both survive being loaded
+    through <img>, but only CSS can be put behind prefers-reduced-motion, and a
+    graphic made of 365 independently moving parts is exactly the kind that
+    should hold still when someone has asked for that.
+    """
     weeks = s["weeks"]
-    height = int(top + 7 * line_h + 26)
+    gap = 3.0
+    room = COL - GUTTER - 10
+    step = room / max(len(weeks), 1)
+    cell = step - gap
+    top = 58
+    height = int(top + 7 * step + 30)
 
     def level(count):
         for i, cut in enumerate((0, 2, 5, 9)):
@@ -460,57 +479,61 @@ def draw_year(s):
                 return i
         return 4
 
+    swatch = "".join(f".h{i}{{fill:{c}}}" for i, c in enumerate(HEAT_LIGHT))
+    swatch_dark = "".join(f".h{i}{{fill:{c}}}" for i, c in enumerate(HEAT_DARK))
+    css = (f"{swatch}"
+           f"@media(prefers-color-scheme:dark){{{swatch_dark}}}"
+           ".cl{opacity:0;transform-box:fill-box;transform-origin:center;"
+           "animation:hm .5s cubic-bezier(.2,.8,.2,1) both}"
+           "@keyframes hm{from{opacity:0;transform:scale(.4)}"
+           "to{opacity:1;transform:scale(1)}}"
+           "@media(prefers-reduced-motion:reduce){"
+           ".cl{opacity:1;animation:none}}")
+
     out = [open_svg(COL, height)]
+    out.append(f"<style>{css}</style>")
     out.append(f'<g opacity="0">{appear(0.10)}'
-               + text(left, 16, "THE YEAR", 9, "muted",
+               + text(GUTTER, 16, "THE YEAR", 9, "muted",
                       extra=' letter-spacing="1.3"')
-               + text(left, 32,
+               + text(GUTTER, 32,
                       f"{s['active']} of {s['span']} days had a contribution", 11)
                + "</g>")
 
-    # a ramp legend, so intensity is never carried by density alone
-    right = COL - 6
-    out.append(f'<g opacity="0">{appear(1.30)}'
-               + text(right - 78, 32, "less", 9, "muted", "end")
-               + f'<text xml:space="preserve" x="{right - 72}" y="32" '
-                 f'class="ink" font-size="{size}">{" ".join(RAMP[1:])}</text>'
-               + text(right, 32, "more", 9, "muted", "end") + "</g>")
-
-    for row in range(7):
-        glyphs = []
-        for week in weeks:
-            day = next((d for d in week if d.get("weekday") == row), None)
-            glyphs.append(RAMP[level(day["contributionCount"] if day else 0)] * cells)
-        line = "".join(glyphs).rstrip()
-        if not line:
-            continue
-        y = top + row * line_h
-        width_px = max(len(line), 1) * char_w
-        name = f"yr{row}"
-        at = 0.30 + row * 0.07
-        out.append(f'<clipPath id="{name}"><rect x="{left}" y="{y}" '
-                   f'height="{line_h}" width="0"><animate '
-                   f'attributeName="width" from="0" to="{width_px:.1f}" '
-                   f'begin="{at:.2f}s" dur="0.40s" fill="freeze"/></rect>'
-                   f'</clipPath>')
-        safe = line.replace("&", "&amp;").replace("<", "&lt;")
-        out.append(f'<g clip-path="url(#{name})"><text xml:space="preserve" '
-                   f'x="{left}" y="{y + size - 0.6:.1f}" class="ink" '
-                   f'font-size="{size}">{safe}</text></g>')
+    seen, last_x = None, -999.0
+    for wi, week in enumerate(weeks):
+        month = int(week[0]["date"][5:7])
+        x = GUTTER + wi * step
+        if month != seen and wi < len(weeks) - 1 and x - last_x >= 46:
+            out.append(text(x, 50, MONTHS[month - 1], 9, "muted"))
+            last_x = x
+        seen = month
 
     for row, caption in ((1, "mon"), (3, "wed"), (5, "fri")):
-        out.append(text(left - 7, top + row * line_h + size - 0.6, caption, 9,
+        out.append(text(GUTTER - 7, top + row * step + cell * 0.78, caption, 9,
                         "muted", "end"))
 
-    seen_month, last_x = None, -999.0
-    baseline = top + 7 * line_h + 13
-    for i, week in enumerate(weeks):
-        month = int(week[0]["date"][5:7])
-        x = left + i * cells * char_w
-        if month != seen_month and i < len(weeks) - 1 and x - last_x >= 34:
-            out.append(text(x, baseline, MONTHS[month - 1], 9, "muted"))
-            last_x = x
-        seen_month = month
+    longest = (len(weeks) - 1) * 0.022 + 6 * 0.05
+    for wi, week in enumerate(weeks):
+        x = GUTTER + wi * step
+        for day in week:
+            row = day.get("weekday", 0)
+            y = top + row * step
+            delay = wi * 0.022 + row * 0.05
+            out.append(f'<rect class="cl h{level(day["contributionCount"])}" '
+                       f'x="{x:.1f}" y="{y:.1f}" width="{cell:.1f}" '
+                       f'height="{cell:.1f}" rx="2.2" '
+                       f'style="animation-delay:{delay:.3f}s"/>')
+
+    legend_y = top + 7 * step + 8
+    lx = COL - 10 - (len(HEAT_LIGHT) * (cell + 2) + 46)
+    out.append(f'<g opacity="0">{appear(longest + 0.5)}')
+    out.append(text(lx - 6, legend_y + cell * 0.8, "less", 9, "muted", "end"))
+    for i in range(len(HEAT_LIGHT)):
+        out.append(f'<rect class="h{i}" x="{lx:.1f}" y="{legend_y:.1f}" '
+                   f'width="{cell:.1f}" height="{cell:.1f}" rx="2.2"/>')
+        lx += cell + 2
+    out.append(text(lx + 4, legend_y + cell * 0.8, "more", 9, "muted"))
+    out.append("</g>")
 
     out.append("</svg>")
     return "".join(out)
@@ -519,7 +542,7 @@ def draw_year(s):
 def draw_clock(s, tz_label):
     """Commits by hour of day, as vertical bars.
 
-    The page already spends its character ramp on the year map; showing the day
+    The page already spends its character ramp on the heatmap; showing the day
     the same way would read as a second calendar. Bars keep the two apart.
     """
     height = 132
@@ -587,9 +610,10 @@ def draw_recent(s):
 
 
 # What the page says it works in. Authored, not derived -- langs.svg already
-# reports what the bytes actually say, and the two are answering different
-# questions.
-STACK = [
+# reports what the bytes actually say, and the two answer different questions.
+# Named apart from FONT_STACK on purpose: they collided once, and the list
+# silently became the font-family of every graphic on the page.
+TECH_STACK = [
     ("languages", "typescript  c  c++  rust"),
     ("runtime", "node  react  react native"),
     ("data", "cloudflare d1  drizzle  sqlite  mongodb"),
@@ -601,11 +625,11 @@ def draw_stack():
     """The stack as drawn type, so it carries the page's face like the headings.
 
     Left as markdown it would render in GitHub's own monospace -- the one place
-    on the page where the typeface breaks.
+    on the page where the typeface would break.
     """
-    height = 12 + len(STACK) * 24 + 6
+    height = 12 + len(TECH_STACK) * 24 + 6
     out = [open_svg(COL, height)]
-    for i, (label, items) in enumerate(STACK):
+    for i, (label, items) in enumerate(TECH_STACK):
         y = 12 + i * 24
         out.append(f'<g opacity="0">{appear(0.10 + i * 0.09)}'
                    + text(GUTTER, y + 12, label.upper(), 9, "muted",
@@ -665,13 +689,25 @@ def main():
         "stats.svg": draw_stats(s),
         "streak.svg": draw_streak(s),
         "langs.svg": draw_langs(s),
-        "year.svg": draw_year(s),
+        "heatmap.svg": draw_heatmap(s),
         "clock.svg": draw_clock(s, tz_label),
         "recent.svg": draw_recent(s),
         "stack.svg": draw_stack(),
     }
     for word in HEADINGS:
         files[f"hd-{word.replace(' ', '-')}.svg"] = draw_heading(word)
+
+    # Every graphic inlines its typeface, so every graphic must actually ask for
+    # it. This shipped broken once -- a constant named STACK was shadowed by a
+    # list of the same name and became the font-family of the whole page -- and
+    # nothing about the output looked wrong enough to notice.
+    # Checked against a literal, not against FONT_STACK: comparing the output to
+    # the same constant that produced it passes no matter what that constant
+    # holds, which is precisely how this shipped broken the first time.
+    for name, svg in files.items():
+        if 'font-family="JBMono,' not in svg:
+            sys.exit(f"{name}: font-family is not the JBMono stack -- "
+                     f"the inlined face would never be selected")
 
     changed = [name for name, svg in files.items()
                if write_if_changed(os.path.join(out_dir, name), svg)]

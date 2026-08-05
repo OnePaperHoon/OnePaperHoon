@@ -52,7 +52,7 @@
 
 <img src="./langs.svg" width="820" alt="Top languages by bytes and by repo"/>
 
-<img src="./year.svg" width="820" alt="The last year, one character per day"/>
+<img src="./heatmap.svg" width="820" alt="Contribution heatmap for the last year"/>
 
 <img src="./clock.svg" width="820" alt="Commits by hour of day"/>
 

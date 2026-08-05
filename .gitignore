@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 scripts/fonts/*.ttf
+
+# downloaded reference repo, not part of this profile
+AVIVASHISHTA29-main/
