@@ -4,20 +4,17 @@
 
 <img src="./stats.svg" width="820" alt="Contributions in the last year"/>
 
+<img src="./heatmap.svg" width="820" alt="Contribution heatmap for the last year"/>
+
 [feedline.kr](https://feedline.kr) &nbsp;·&nbsp;
 [solved.ac](https://solved.ac/wkdgns720)
-
-</div>
 
 <img src="./hd-about.svg" width="820" alt="about"/>
 
 > 서울에서 서비스 만드는 개발자예요.<br>
 > 여기저기 흩어져 있는 정보를 한곳에 모아 쓸 만하게 만드는 일을 좋아합니다.
 
-<samp>2026.05 &#8211; present &nbsp;&nbsp; Shopinx &nbsp;·&nbsp; 서비스 개발</samp><br>
-<samp>2025.06 &#8211; 2025.12 &nbsp;&nbsp; Newtonz &nbsp;·&nbsp; 개발 총괄</samp><br>
-<samp>2025.03 &#8211; present &nbsp;&nbsp; 42Seoul &nbsp;·&nbsp; member</samp><br>
-<samp>2023.09 &#8211; 2025.03 &nbsp;&nbsp; 42Seoul &nbsp;·&nbsp; learner (École 42)</samp>
+<img src="./career.svg" width="820" alt="Shopinx, Newtonz, 42Seoul"/>
 
 <img src="./hd-stack.svg" width="820" alt="stack"/>
 
@@ -46,18 +43,14 @@
 
 <img src="./hd-stats.svg" width="820" alt="stats"/>
 
-<div align="center">
-
 <img src="./streak.svg" width="820" alt="Current and longest streak"/>
 
 <img src="./langs.svg" width="820" alt="Top languages by bytes and by repo"/>
 
-<img src="./heatmap.svg" width="820" alt="Contribution heatmap for the last year"/>
-
 <img src="./clock.svg" width="820" alt="Commits by hour of day"/>
-
-</div>
 
 <img src="./hd-algorithm.svg" width="820" alt="algorithm"/>
 
 [![solved.ac](https://mazassumnida.wtf/api/v2/generate_badge?boj=wkdgns720)](https://solved.ac/wkdgns720)
+
+</div>

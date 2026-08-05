@@ -36,7 +36,7 @@ HEADINGS = "about stack projects stats algorithm"
 # for an empty streak, and the middle dot separates the wordmark's tagline.
 # Without them the browser falls back per-glyph to some other face, and that one
 # character lands in the wrong typeface at the wrong width.
-LATIN = string.printable[:95] + "–—·"
+LATIN = string.printable[:95] + "–—·É"
 
 # (source ttf, output woff2, characters to keep)
 JOBS = [

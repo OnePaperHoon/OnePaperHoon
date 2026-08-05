@@ -93,7 +93,19 @@ FONT_STACK = ("JBMono,ui-monospace,SFMono-Regular,Menlo,Consolas,"
               "&apos;Liberation Mono&apos;,monospace")
 
 COL = 820                       # every graphic shares one column width
-GUTTER = 34                     # left inset; the heatmap needs it for weekday labels
+GUTTER = 0                      # content origin -- markdown text and the section
+                                # headings both start at the image's left edge,
+                                # so every drawn block has to start there too or
+                                # it reads as indented against them
+DAY_GUTTER = 26                 # ...except the heatmap, whose weekday labels
+                                # hang in a margin. Its leftmost ink is the
+                                # label, and that is what lines up at GUTTER.
+ROW = 24                        # row pitch. GitHub sets markdown's line box to
+                                # 16px x 1.5 = 24px, so a drawn block on any
+                                # other pitch beats against the prose around it
+BODY = 12                       # body text inside a drawn block
+LABEL = 9                       # the small-caps label above one
+
 SWEEP = 1.25                    # seconds for a full left-to-right reveal
 RAMP = [" ", ":", "+", "#", "@"]
 MONTHS = ["jan", "feb", "mar", "apr", "may", "jun",
@@ -415,7 +427,7 @@ def draw_streak(s):
 
 def draw_langs(s):
     lines = max(len(s["by_bytes"]), len(s["by_repos"]), 1)
-    height = 26 + lines * 22 + 6
+    height = 26 + lines * ROW + 6
     half = (COL - GUTTER - 30) / 2
     name_col = 92
     bar_room = half - name_col - 48
@@ -425,22 +437,22 @@ def draw_langs(s):
               (GUTTER + half + 30, "by repos", s["by_repos"], False)]
     for pi, (px, title, rows, as_share) in enumerate(panels):
         out.append(f'<g opacity="0">{appear(0.10 + pi * 0.10)}'
-                   + text(px, 12, title.upper(), 9, "muted",
+                   + text(px, 12, title.upper(), LABEL, "muted",
                           extra=' letter-spacing="1.3"') + "</g>")
         if not rows:
             continue
         biggest = max(v for _, v in rows) or 1
         total = sum(v for _, v in rows) or 1
         name = f"lg{pi}"
-        clip, cursor = sweep(name, px + name_col, 20, bar_room, lines * 22,
+        clip, cursor = sweep(name, px + name_col, 20, bar_room, lines * ROW,
                              0.34 + pi * 0.12, 0.95)
         out.append(clip)
         for ri, (label, value) in enumerate(rows):
-            y = 26 + ri * 22
+            y = 26 + ri * ROW
             readout = f"{value / total * 100:.0f}%" if as_share else f"{value}"
             out.append(f'<g opacity="0">{appear(0.24 + pi * 0.10 + ri * 0.05)}'
-                       + text(px, y + 8, label.lower()[:12], 11, "strong")
-                       + text(px + half - 6, y + 8, readout, 11, "muted", "end")
+                       + text(px, y + 8, label.lower()[:12], BODY, "strong")
+                       + text(px + half - 6, y + 8, readout, BODY, "muted", "end")
                        + "</g>")
             out.append(f'<g clip-path="url(#{name})">'
                        + bar(px + name_col, y, bar_room * value / biggest, 7)
@@ -467,7 +479,7 @@ def draw_heatmap(s):
     """
     weeks = s["weeks"]
     gap = 3.0
-    room = COL - GUTTER - 10
+    room = COL - DAY_GUTTER - 10
     step = room / max(len(weeks), 1)
     cell = step - gap
     top = 58
@@ -502,19 +514,19 @@ def draw_heatmap(s):
     seen, last_x = None, -999.0
     for wi, week in enumerate(weeks):
         month = int(week[0]["date"][5:7])
-        x = GUTTER + wi * step
+        x = DAY_GUTTER + wi * step
         if month != seen and wi < len(weeks) - 1 and x - last_x >= 46:
             out.append(text(x, 50, MONTHS[month - 1], 9, "muted"))
             last_x = x
         seen = month
 
     for row, caption in ((1, "mon"), (3, "wed"), (5, "fri")):
-        out.append(text(GUTTER - 7, top + row * step + cell * 0.78, caption, 9,
+        out.append(text(DAY_GUTTER - 7, top + row * step + cell * 0.78, caption, 9,
                         "muted", "end"))
 
     longest = (len(weeks) - 1) * 0.022 + 6 * 0.05
     for wi, week in enumerate(weeks):
-        x = GUTTER + wi * step
+        x = DAY_GUTTER + wi * step
         for day in week:
             row = day.get("weekday", 0)
             y = top + row * step
@@ -592,18 +604,18 @@ def draw_clock(s, tz_label):
 def draw_recent(s):
     """The last handful of repositories to receive a push."""
     rows = s["recent"] or []
-    height = 26 + max(len(rows), 1) * 20 + 6
+    height = 26 + max(len(rows), 1) * ROW + 6
 
     out = [open_svg(COL, height)]
     out.append(f'<g opacity="0">{appear(0.10)}'
-               + text(GUTTER, 12, "RECENTLY PUSHED", 9, "muted",
+               + text(GUTTER, 12, "RECENTLY PUSHED", LABEL, "muted",
                       extra=' letter-spacing="1.3"') + "</g>")
     for i, repo in enumerate(rows):
-        y = 26 + i * 20
+        y = 26 + i * ROW
         out.append(f'<g opacity="0">{appear(0.20 + i * 0.07)}'
-                   + text(GUTTER, y + 8, repo["name"][:28], 12, "strong")
-                   + text(GUTTER + 300, y + 8, repo["lang"].lower(), 11, "muted")
-                   + text(COL - 6, y + 8, repo["ago"], 11, "muted", "end")
+                   + text(GUTTER, y + 8, repo["name"][:28], BODY, "strong")
+                   + text(GUTTER + 300, y + 8, repo["lang"].lower(), BODY, "muted")
+                   + text(COL - 6, y + 8, repo["ago"], BODY, "muted", "end")
                    + "</g>")
     out.append("</svg>")
     return "".join(out)
@@ -627,14 +639,41 @@ def draw_stack():
     Left as markdown it would render in GitHub's own monospace -- the one place
     on the page where the typeface would break.
     """
-    height = 12 + len(TECH_STACK) * 24 + 6
+    height = 12 + len(TECH_STACK) * ROW + 6
     out = [open_svg(COL, height)]
     for i, (label, items) in enumerate(TECH_STACK):
-        y = 12 + i * 24
+        y = 12 + i * ROW
         out.append(f'<g opacity="0">{appear(0.10 + i * 0.09)}'
-                   + text(GUTTER, y + 12, label.upper(), 9, "muted",
+                   + text(GUTTER, y + 12, label.upper(), LABEL, "muted",
                           extra=' letter-spacing="1.3"')
-                   + text(GUTTER + 110, y + 12, items, 12, "strong")
+                   + text(GUTTER + 110, y + 12, items, BODY, "strong")
+                   + "</g>")
+    out.append("</svg>")
+    return "".join(out)
+
+
+# Where I have been. Drawn rather than written as markdown for one reason: the
+# date column only lines up because every row starts with a fixed-width span,
+# and centring the page would centre each <samp> line independently and pull
+# that column apart. Inside an image the rows keep their own left edge.
+CAREER = [
+    ("2026.05 &#8211; present", "Shopinx", "서비스 개발"),
+    ("2025.06 &#8211; 2025.12", "Newtonz", "개발 총괄"),
+    ("2025.03 &#8211; present", "42Seoul", "member"),
+    ("2023.09 &#8211; 2025.03", "42Seoul", "learner (&#201;cole 42)"),
+]
+
+
+def draw_career():
+    height = 12 + len(CAREER) * ROW + 6
+    out = [open_svg(COL, height)]
+    for i, (span, org, role) in enumerate(CAREER):
+        y = 12 + i * ROW
+        out.append(f'<g opacity="0">{appear(0.10 + i * 0.08)}'
+                   + text(GUTTER, y + 12, span, BODY, "muted")
+                   + text(GUTTER + 150, y + 12, org, BODY, "strong")
+                   + text(GUTTER + 232, y + 12, "&#183;", BODY, "muted")
+                   + text(GUTTER + 256, y + 12, role, BODY, "muted")
                    + "</g>")
     out.append("</svg>")
     return "".join(out)
@@ -693,6 +732,7 @@ def main():
         "clock.svg": draw_clock(s, tz_label),
         "recent.svg": draw_recent(s),
         "stack.svg": draw_stack(),
+        "career.svg": draw_career(),
     }
     for word in HEADINGS:
         files[f"hd-{word.replace(' ', '-')}.svg"] = draw_heading(word)
