@@ -627,7 +627,7 @@ def draw_recent(s):
 # silently became the font-family of every graphic on the page.
 TECH_STACK = [
     ("languages", "typescript  c  c++  rust"),
-    ("runtime", "node  react  react native"),
+    ("runtime", "node  react  vite  trpc  react native"),
     ("data", "cloudflare d1  drizzle  sqlite  mongodb"),
     ("infra", "cloudflare workers  docker  nginx  linux  git"),
 ]
